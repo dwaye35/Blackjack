@@ -14,6 +14,7 @@ public class Hand {
 
     void dealCard() {
         totalValue = 0;
+        numAces11 = 0;
         cards.add(deck.pop());
         //check if ace is present
         for (Card card : cards) {

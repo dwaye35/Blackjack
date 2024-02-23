@@ -15,11 +15,22 @@ public class GameManager {
             player.resetChips();
             System.out.print("Enter an amount of chips to start with (1 - 10,000): ");
             player.addChips(scn.nextInt());
+            player.totalChipsAdded += player.getChips();
             if (player.getChips() <= 0 || player.getChips() > 10000) {
                 System.out.println("Invalid number of chips...\n");
                 continue;
             }
-            while (player.getChips() > 0 && playing) {
+            while (playing) {
+                if (player.getChips() < 10) {
+                    System.out.println("1 to go to cashier\n" +
+                            "Any other key to exit");
+                    char exitVal = scn.next().charAt(0);
+                    if (exitVal != '1') {
+                        playing = false;
+                        break;
+                    }
+                    cashier();
+                }
                 dealHand();
             }
         }
@@ -28,7 +39,7 @@ public class GameManager {
     void dealHand() throws InterruptedException {
         while (playing) {
             int playerOpt = 0;
-            if (player.totalHandsPlayed > 0 && playerOpt != 1 && playerOpt != 3) {
+            while (player.totalHandsPlayed > 0 && playerOpt != 1 && playerOpt != 3) {
                 System.out.println("1 to play again\n" +
                         "2 to print statistics\n" +
                         "3 to quit");
@@ -38,20 +49,19 @@ public class GameManager {
                 }
                 else if (playerOpt == 3) {
                     playing = false;
+                    playerOpt = 3;
                     break;
                 }
             }
             if (!playing)
                 break;
-            int betAmount = 0;
             System.out.println("Player Chips: " + player.getChips());
             if (player.getChips() < 10) {
                 System.out.println("Not enough chips.. Removing player.");
-                playing = false;
                 break;
             }
             System.out.print("Enter bet amount (minimum 10): ");
-            betAmount = scn.nextInt();
+            int betAmount = scn.nextInt();
             if (betAmount < 10) {
                 System.out.println("Bet too low.");
                 continue;
@@ -87,7 +97,9 @@ public class GameManager {
                 playersTurn = false;
             }
             while (playersTurn) {
-                System.out.println("h to hit\ns to stand\nd to double:");
+                System.out.println("h to hit\ns to stand");
+                if (player.hand.cards.size() == 2)
+                    System.out.println("d to double:");
                 char playerChoice = scn.next().charAt(0);
                 switch (playerChoice) {
                     case 'h':
@@ -99,39 +111,65 @@ public class GameManager {
                             System.out.println("Busted! Player loses.");
                             playersTurn = false;
                             playerBust = true;
-                            if (!playerBust)
-                                Thread.sleep(2500);
+                            Thread.sleep(2000);
                         }
-                        continue;
+                        else if (player.hand.totalValue == 21)
+                            playersTurn = false;
+                        break;
                     case 's':
                         playersTurn = false;
                         break;
                     case 'd':
-                        //TODO implement double
+                        if (player.hand.cards.size() > 2) {
+                            System.out.println("Can only double on the first turn!");
+                        }
+                        else if (player.getChips() < (betAmount * 2)) {
+                            System.out.println("Not enough chips to double bet..\n" +
+                                    "Player Bank: " + player.getChips() +
+                                    "\nDouble amount: " + betAmount * 2);
+                        }
+                        else {
+                            System.out.println("New bet size: " + betAmount * 2 +
+                                    "\n Good luck.");
+                            Thread.sleep(2500);
+                            betAmount *= 2;
+                            player.hand.dealCard();
+                            player.printHand();
+                            dealer.printHand();
+                            Thread.sleep(2500);
+                            if (player.hand.totalValue > 21) {
+                                System.out.println("Busted! Player loses.");
+                                playerBust = true;
+                            }
+                            playersTurn = false;
+                        }
+                        break;
                 }
-            }
-            if (dealer.hand.totalValue > 16) {
-                player.printHand();
-                dealer.printCompleteHand();
-                Thread.sleep(3000);
-            }
-            else {
-                dealer.printCompleteHand();
-                while (dealer.hand.totalValue < 17) {
-                    dealer.hand.dealCard();
-                    Thread.sleep(3000);
+            } //end of player's turn
+            //now to dealer
+                if (dealer.hand.totalValue > 16) {
+                    player.printHand();
                     dealer.printCompleteHand();
+                    Thread.sleep(3000);
+                } else {
+                    dealer.printCompleteHand();
+                    while (dealer.hand.totalValue < 17) {
+                        dealer.hand.dealCard();
+                        Thread.sleep(3000);
+                        dealer.printCompleteHand();
+                        if (dealer.hand.totalValue > 17)
+                            Thread.sleep(1500);
+                    }
+                    if (!playerBust && !blackjack) {
+                        System.out.print("Enter to continue..");
+                        scn.nextLine();
+                        scn.nextLine();
+                    }
+                    player.printHand();
+                    dealer.printCompleteHand();
+                    Thread.sleep(2500);
                 }
-                if (!playerBust && !blackjack) {
-                    System.out.print("Enter to continue..");
-                    scn.nextLine();
-                    scn.nextLine();
-                }
-                player.printHand();
-                dealer.printCompleteHand();
-                Thread.sleep(2500);
-            }
-            settleGame(betAmount);
+                settleGame(betAmount);
         }
     }
 
@@ -167,5 +205,18 @@ public class GameManager {
             System.out.println("Push!");
         }
         player.totalHandsPlayed++;
+    }
+
+    void cashier() throws InterruptedException {
+        System.out.print("---CASHIER---\n" +
+                "Enter the amount of chips: ");
+        int chipsToAdd = 0;
+        chipsToAdd = scn.nextInt();
+        player.addChips(chipsToAdd);
+        player.totalChipsAdded += chipsToAdd;
+        System.out.println("\nAdded " + player.getChips() + " chips.\n" +
+                "Good luck..");
+        Thread.sleep(1200);
+
     }
 }

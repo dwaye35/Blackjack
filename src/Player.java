@@ -1,4 +1,5 @@
 public class Player {
+    public int totalChipsAdded = 0;
     private int chips = 0;
     public int wins = 0;
     public int losses = 0;
@@ -31,6 +32,8 @@ public class Player {
         System.out.println("Wins: " + wins);
         System.out.println("Losses: " + losses);
         System.out.println("Win rate: " + ((double)wins / (double)totalHandsPlayed) * 100 + "%");
+        System.out.println("Total win/loss: $" +
+                (this.chips - this.totalChipsAdded));
     }
 }
 
